@@ -1,34 +1,248 @@
-import json
-import random
-from datetime import datetime
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NZ Occupation Rates Monitor 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        .card { transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        .loading { opacity: 0.5; pointer-events: none; }
+    </style>
+</head>
+<body class="text-gray-800">
 
-# 1. Load existing data
-with open('data.json', 'r') as f:
-    data = json.load(f)
+    <!-- Navigation Bar -->
+    <nav class="bg-blue-900 text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-chart-line text-2xl"></i>
+                <h1 class="text-2xl font-bold">NZ Occupation Monitor</h1>
+            </div>
+            <div class="text-sm bg-blue-800 py-1 px-3 rounded-full" id="lastUpdatedTag">
+                <i class="fa-solid fa-spinner fa-spin"></i> Loading Data...
+            </div>
+        </div>
+    </nav>
 
-# 2. Simulate "Fetching" new data
-# (In a real scenario, this is where we would call the Stats NZ API)
-print("Fetching latest occupation stats...")
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-8" id="mainContainer">
 
-# Simulate small market fluctuations
-variation = random.uniform(-0.1, 0.1)
-new_unemployment = round(data['stats']['unemployment_rate'] + variation, 1)
+        <!-- Welcome Section -->
+        <div class="mb-8 text-center">
+            <h2 class="text-3xl font-bold text-gray-900">New Zealand Employment Dashboard</h2>
+            <p class="text-gray-600 mt-2">Evaluating current occupation trends, growth sectors, and unemployment statistics.</p>
+        </div>
 
-# Ensure it stays within realistic NZ bounds (3% to 6%)
-new_unemployment = max(3.0, min(6.0, new_unemployment))
+        <!-- Key Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Unemployment -->
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500 card">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Unemployment Rate</p>
+                        <h3 class="text-3xl font-bold text-gray-800" id="stat-unemployment">--%</h3>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full text-blue-600"><i class="fa-solid fa-users-slash"></i></div>
+                </div>
+                <p class="text-xs mt-2" id="trend-unemployment">Loading...</p>
+            </div>
 
-# 3. Update the data structure
-data['meta']['last_updated'] = datetime.now().strftime("%Y-%m-%d")
-data['stats']['unemployment_rate'] = new_unemployment
+            <!-- Employment -->
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500 card">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Employment Rate</p>
+                        <h3 class="text-3xl font-bold text-gray-800" id="stat-employment">--%</h3>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full text-green-600"><i class="fa-solid fa-briefcase"></i></div>
+                </div>
+                <p class="text-xs mt-2" id="trend-employment">Loading...</p>
+            </div>
 
-# Update trend arrows based on the random change
-if variation > 0:
-    data['stats']['unemployment_trend'] = 0.1
-else:
-    data['stats']['unemployment_trend'] = -0.1
+            <!-- Highest Growth -->
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500 card">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Highest Growth</p>
+                        <h3 class="text-xl font-bold text-gray-800" id="stat-growth-name">--</h3>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-full text-purple-600"><i class="fa-solid fa-user-nurse"></i></div>
+                </div>
+                <p class="text-xs text-green-500 mt-2" id="stat-growth-val">Loading...</p>
+            </div>
 
-# 4. Save the file back
-with open('data.json', 'w') as f:
-    json.dump(data, f, indent=4)
+            <!-- Declining -->
+             <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-orange-500 card">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Declining Sector</p>
+                        <h3 class="text-xl font-bold text-gray-800" id="stat-decline-name">--</h3>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-full text-orange-600"><i class="fa-solid fa-trowel-bricks"></i></div>
+                </div>
+                <p class="text-xs text-red-500 mt-2" id="stat-decline-val">Loading...</p>
+            </div>
+        </div>
 
-print(f"Data updated successfully. New Unemployment Rate: {new_unemployment}%")
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Top Industry Growth (Yearly %)</h3>
+                <canvas id="growthChart"></canvas>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Unemployment Trend (Forecast)</h3>
+                <canvas id="unemploymentChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Detailed Data Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                <h3 class="text-xl font-bold text-gray-800">Occupation Rate Evaluation</h3>
+                <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search occupation..." class="border border-gray-300 rounded-md px-4 py-2 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 uppercase text-sm leading-normal">
+                            <th class="py-3 px-6">Occupation / Industry</th>
+                            <th class="py-3 px-6">Trend</th>
+                            <th class="py-3 px-6">Growth Rate</th>
+                            <th class="py-3 px-6">Status</th>
+                            <th class="py-3 px-6">Avg Earnings (NZD)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-600 text-sm font-light" id="occupationTableBody">
+                        <!-- Data will be inserted here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="mt-8 text-center text-gray-500 text-sm">
+            <p>Data Source: <a href="data.json" class="text-blue-500 hover:underline">View Raw JSON Data</a></p>
+            <p>&copy; 2025 NZ Occupation Monitor</p>
+        </div>
+
+    </div>
+
+    <script>
+        // Fetch Data from data.json
+        async function loadData() {
+            try {
+                const response = await fetch('data.json');
+                if (!response.ok) throw new Error("Failed to load data");
+                const data = await response.json();
+                
+                updateDashboard(data);
+            } catch (error) {
+                console.error("Error loading data:", error);
+                document.getElementById('lastUpdatedTag').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Error Loading Data';
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update Header
+            document.getElementById('lastUpdatedTag').innerHTML = `<i class="fa-regular fa-clock"></i> Updated: ${data.meta.last_updated} (${data.meta.quarter})`;
+
+            // Update Cards
+            document.getElementById('stat-unemployment').innerText = data.stats.unemployment_rate + '%';
+            document.getElementById('trend-unemployment').innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> ${data.stats.unemployment_trend > 0 ? '+' : ''}${data.stats.unemployment_trend}% vs prev quarter`;
+            document.getElementById('trend-unemployment').className = data.stats.unemployment_trend > 0 ? "text-xs text-red-500 mt-2" : "text-xs text-green-500 mt-2";
+
+            document.getElementById('stat-employment').innerText = data.stats.employment_rate + '%';
+            
+            // Sort industries to find highest/lowest
+            const sortedInd = [...data.industries].sort((a,b) => b.growth_rate - a.growth_rate);
+            const best = sortedInd[0];
+            const worst = sortedInd[sortedInd.length - 1];
+
+            document.getElementById('stat-growth-name').innerText = best.name;
+            document.getElementById('stat-growth-val').innerText = `+${best.growth_rate}% growth`;
+            
+            document.getElementById('stat-decline-name').innerText = worst.name;
+            document.getElementById('stat-decline-val').innerText = `${worst.growth_rate}% slowdown`;
+
+            // Update Table
+            const tbody = document.getElementById('occupationTableBody');
+            tbody.innerHTML = '';
+            data.industries.forEach(ind => {
+                let icon = ind.trend_direction === 'up' ? '<i class="fa-solid fa-arrow-up text-green-500"></i>' : 
+                           (ind.trend_direction === 'down' ? '<i class="fa-solid fa-arrow-down text-red-500"></i>' : '<i class="fa-solid fa-minus text-gray-500"></i>');
+                
+                let statusColor = ind.status.includes('High') || ind.status.includes('Growing') ? 'bg-green-200 text-green-700' : 
+                                  (ind.status.includes('Contracting') || ind.status.includes('Slowing') ? 'bg-orange-200 text-orange-700' : 'bg-blue-200 text-blue-700');
+
+                let row = `
+                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                        <td class="py-3 px-6 font-medium">${ind.name}</td>
+                        <td class="py-3 px-6">${icon}</td>
+                        <td class="py-3 px-6 font-bold ${ind.growth_rate > 0 ? 'text-green-600' : 'text-red-600'}">${ind.growth_rate > 0 ? '+' : ''}${ind.growth_rate}%</td>
+                        <td class="py-3 px-6"><span class="${statusColor} py-1 px-3 rounded-full text-xs">${ind.status}</span></td>
+                        <td class="py-3 px-6">$${ind.earnings.toFixed(2)}</td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+
+            // Init Charts
+            initCharts(data);
+        }
+
+        function initCharts(data) {
+            // Growth Chart
+            const ctxGrowth = document.getElementById('growthChart').getContext('2d');
+            new Chart(ctxGrowth, {
+                type: 'bar',
+                data: {
+                    labels: data.industries.map(i => i.name),
+                    datasets: [{
+                        label: 'Growth (%)',
+                        data: data.industries.map(i => i.growth_rate),
+                        backgroundColor: data.industries.map(i => i.growth_rate > 0 ? 'rgba(34, 197, 94, 0.7)' : 'rgba(239, 68, 68, 0.7)')
+                    }]
+                },
+                options: { responsive: true }
+            });
+
+            // Unemployment Chart (Mock Data for Line)
+            const ctxUnemp = document.getElementById('unemploymentChart').getContext('2d');
+            new Chart(ctxUnemp, {
+                type: 'line',
+                data: {
+                    labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+                    datasets: [{
+                        label: 'Unemployment Trend',
+                        data: [4.9, 5.1, 5.2, data.stats.unemployment_rate], // Ends with current rate
+                        borderColor: 'blue',
+                        fill: false
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        function filterTable() {
+            var input = document.getElementById("searchInput");
+            var filter = input.value.toUpperCase();
+            var rows = document.getElementById("occupationTableBody").getElementsByTagName("tr");
+            for (var i = 0; i < rows.length; i++) {
+                var td = rows[i].getElementsByTagName("td")[0];
+                if (td) {
+                    var txtValue = td.textContent || td.innerText;
+                    rows[i].style.display = txtValue.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+                }
+            }
+        }
+
+        // Load data on start
+        loadData();
+    </script>
+</body>
+</html>
