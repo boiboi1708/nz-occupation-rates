@@ -4,290 +4,539 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NZ Occupation Rates Monitor 2025</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
-        .card { transition: transform 0.2s; }
-        .card:hover { transform: translateY(-5px); }
-        .source-link { color: #3b82f6; text-decoration: none; }
-        .source-link:hover { text-decoration: underline; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .hero-pattern { background-color: #0f172a; background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 20px 20px; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .transition-fast { transition: all 0.2s ease-in-out; }
+        /* Custom Scrollbar for tables */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="text-gray-800 flex flex-col min-h-screen">
+<body class="flex flex-col min-h-screen text-slate-800">
 
-    <!-- Navigation Bar -->
-    <nav class="bg-slate-900 text-white shadow-lg">
-        <div class="container mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-chart-line text-2xl text-blue-400"></i>
-                <h1 class="text-2xl font-bold">NZ Occupation Monitor</h1>
+    <!-- Top Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg">
+                    <i class="fa-solid fa-chart-simple text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900">NZ Occupation Monitor</h1>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Labour Market Intelligence</p>
+                </div>
             </div>
             
-            <!-- Dynamic Status Badge -->
-            <div id="statusBadge" class="flex items-center space-x-2 bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
-                <span class="relative flex h-3 w-3">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                </span>
-                <span class="text-sm font-medium" id="lastUpdatedText">Checking status...</span>
+            <div id="statusBadge" class="hidden md:flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+                <div class="relative flex h-2.5 w-2.5">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </div>
+                <span class="text-xs font-medium text-slate-600" id="lastUpdatedText">Syncing...</span>
             </div>
         </div>
-    </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <div class="hero-pattern text-white py-12 md:py-16">
+        <div class="container mx-auto px-4 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">New Zealand Employment Insights</h2>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-8">Real-time analysis of occupation trends, INZ Green List status, and official ANZSCO classifications.</p>
+            
+            <!-- Global Search Bar -->
+            <div class="max-w-xl mx-auto relative group">
+                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                </div>
+                <input type="text" id="globalSearch" onkeyup="handleGlobalSearch()" 
+                    class="w-full pl-11 pr-4 py-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-900 transition-all shadow-xl"
+                    placeholder="Search by Job Title, ANZSCO Code, or Visa Status...">
+            </div>
+        </div>
+    </div>
 
     <!-- Main Content -->
-    <div class="container mx-auto px-6 py-8 flex-grow">
-
-        <!-- Header -->
-        <div class="mb-8 text-center">
-            <h2 class="text-3xl font-bold text-gray-900">Market Intelligence Dashboard</h2>
-            <p class="text-gray-600 mt-2">Aggregated insights on employment trends and sector growth.</p>
+    <main class="container mx-auto px-4 py-8 -mt-8 flex-grow">
+        
+        <!-- Search Results Panel (Hidden by default) -->
+        <div id="searchResultsPanel" class="hidden bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden mb-8 animate-fade-in-down">
+            <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-bold text-slate-700"><i class="fa-solid fa-list-ul mr-2"></i> ANZSCO & INZ Search Results</h3>
+                <button onclick="closeSearch()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="max-h-96 overflow-y-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                        <tr>
+                            <th class="px-6 py-3 font-semibold text-slate-500">ANZSCO Code</th>
+                            <th class="px-6 py-3 font-semibold text-slate-500">Job Title</th>
+                            <th class="px-6 py-3 font-semibold text-slate-500">Skill Level</th>
+                            <th class="px-6 py-3 font-semibold text-slate-500">Visa Pathway (INZ)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="anzscoResultsBody" class="divide-y divide-slate-100">
+                        <!-- Search results injected here -->
+                    </tbody>
+                </table>
+                <div id="noResultsMsg" class="hidden p-8 text-center text-slate-500">
+                    No matching occupations found in the database.
+                </div>
+            </div>
         </div>
 
-        <!-- Key Metrics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- KPI Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- Unemployment -->
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500 card">
-                <div class="flex justify-between items-center">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 card-hover transition-fast">
+                <div class="flex justify-between items-start mb-4">
                     <div>
-                        <p class="text-gray-500 text-sm font-semibold">UNEMPLOYMENT RATE</p>
-                        <h3 class="text-3xl font-bold text-gray-800" id="stat-unemployment">--%</h3>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Unemployment Rate</p>
+                        <h3 class="text-3xl font-bold text-slate-900 mt-1" id="stat-unemployment">--%</h3>
                     </div>
-                    <div class="bg-blue-50 p-3 rounded-full text-blue-600"><i class="fa-solid fa-users-slash"></i></div>
+                    <div class="bg-blue-50 text-blue-600 p-2.5 rounded-lg">
+                        <i class="fa-solid fa-users-viewfinder"></i>
+                    </div>
                 </div>
-                <p class="text-xs mt-2" id="trend-unemployment">Loading...</p>
+                <div class="flex items-center text-xs" id="trend-unemployment-container">
+                    <span id="trend-unemployment" class="font-bold mr-1">--</span>
+                    <span class="text-slate-400">vs last quarter</span>
+                </div>
             </div>
 
             <!-- Employment -->
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500 card">
-                <div class="flex justify-between items-center">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 card-hover transition-fast">
+                <div class="flex justify-between items-start mb-4">
                     <div>
-                        <p class="text-gray-500 text-sm font-semibold">EMPLOYMENT RATE</p>
-                        <h3 class="text-3xl font-bold text-gray-800" id="stat-employment">--%</h3>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Employment Rate</p>
+                        <h3 class="text-3xl font-bold text-slate-900 mt-1" id="stat-employment">--%</h3>
                     </div>
-                    <div class="bg-green-50 p-3 rounded-full text-green-600"><i class="fa-solid fa-briefcase"></i></div>
+                    <div class="bg-emerald-50 text-emerald-600 p-2.5 rounded-lg">
+                        <i class="fa-solid fa-briefcase"></i>
+                    </div>
                 </div>
-                <p class="text-xs mt-2" id="trend-employment">Loading...</p>
+                <div class="flex items-center text-xs">
+                    <span class="text-emerald-600 font-bold mr-1"><i class="fa-solid fa-check"></i> Stable</span>
+                    <span class="text-slate-400">Seasonally adjusted</span>
+                </div>
             </div>
 
-            <!-- Highest Growth -->
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500 card">
-                <div class="flex justify-between items-center">
+            <!-- Top Growth -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 card-hover transition-fast">
+                <div class="flex justify-between items-start mb-4">
                     <div>
-                        <p class="text-gray-500 text-sm font-semibold">TOP GROWTH SECTOR</p>
-                        <h3 class="text-xl font-bold text-gray-800 truncate" id="stat-growth-name">--</h3>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Fastest Growth</p>
+                        <h3 class="text-xl font-bold text-slate-900 mt-1 truncate" id="stat-growth-name">--</h3>
                     </div>
-                    <div class="bg-purple-50 p-3 rounded-full text-purple-600"><i class="fa-solid fa-rocket"></i></div>
+                    <div class="bg-indigo-50 text-indigo-600 p-2.5 rounded-lg">
+                        <i class="fa-solid fa-arrow-trend-up"></i>
+                    </div>
                 </div>
-                <p class="text-xs text-green-500 mt-2 font-bold" id="stat-growth-val">Loading...</p>
+                <div class="flex items-center text-xs">
+                    <span class="text-emerald-600 font-bold mr-1" id="stat-growth-val">--</span>
+                    <span class="text-slate-400">Year over Year</span>
+                </div>
             </div>
 
-            <!-- Declining -->
-             <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-orange-500 card">
-                <div class="flex justify-between items-center">
+            <!-- Decline -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 card-hover transition-fast">
+                <div class="flex justify-between items-start mb-4">
                     <div>
-                        <p class="text-gray-500 text-sm font-semibold">HARDEST HIT SECTOR</p>
-                        <h3 class="text-xl font-bold text-gray-800 truncate" id="stat-decline-name">--</h3>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Slowing Sector</p>
+                        <h3 class="text-xl font-bold text-slate-900 mt-1 truncate" id="stat-decline-name">--</h3>
                     </div>
-                    <div class="bg-orange-50 p-3 rounded-full text-orange-600"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                    <div class="bg-amber-50 text-amber-600 p-2.5 rounded-lg">
+                        <i class="fa-solid fa-arrow-trend-down"></i>
+                    </div>
                 </div>
-                <p class="text-xs text-red-500 mt-2 font-bold" id="stat-decline-val">Loading...</p>
+                <div class="flex items-center text-xs">
+                    <span class="text-red-500 font-bold mr-1" id="stat-decline-val">--</span>
+                    <span class="text-slate-400">Year over Year</span>
+                </div>
             </div>
         </div>
 
-        <!-- Charts Section -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Industry Growth (YoY %)</h3>
-                <canvas id="growthChart"></canvas>
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <h4 class="text-sm font-bold text-slate-900 mb-6 uppercase">Industry Growth Performance</h4>
+                <div class="relative h-64">
+                    <canvas id="growthChart"></canvas>
+                </div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Unemployment Forecast</h3>
-                <canvas id="unemploymentChart"></canvas>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <h4 class="text-sm font-bold text-slate-900 mb-6 uppercase">National Unemployment Forecast</h4>
+                <div class="relative h-64">
+                    <canvas id="unemploymentChart"></canvas>
+                </div>
             </div>
         </div>
 
-        <!-- Detailed Data Table -->
-        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-            <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50">
-                <h3 class="text-xl font-bold text-gray-800">Sector Breakdown</h3>
-                <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search occupation..." class="border border-gray-300 rounded-md px-4 py-2 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <!-- Detailed Evaluation Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <h3 class="font-bold text-slate-800 text-lg">Detailed Sector Evaluation</h3>
+                <div class="relative">
+                    <i class="fa-solid fa-filter absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="sectorFilter" onkeyup="filterSectorTable()" placeholder="Filter table..." 
+                        class="pl-8 pr-4 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64">
+                </div>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+                <table class="w-full text-left text-sm">
                     <thead>
-                        <tr class="bg-white text-gray-600 uppercase text-xs font-bold tracking-wider">
-                            <th class="py-4 px-6 border-b">Occupation / Industry</th>
-                            <th class="py-4 px-6 border-b">Trend</th>
-                            <th class="py-4 px-6 border-b">Growth</th>
-                            <th class="py-4 px-6 border-b">Market Status</th>
-                            <th class="py-4 px-6 border-b">Avg Earnings</th>
+                        <tr class="bg-slate-50 text-slate-500 uppercase text-xs font-bold tracking-wider">
+                            <th class="px-6 py-4 border-b border-slate-100">Occupation / Industry</th>
+                            <th class="px-6 py-4 border-b border-slate-100">Trend</th>
+                            <th class="px-6 py-4 border-b border-slate-100">Growth</th>
+                            <th class="px-6 py-4 border-b border-slate-100">Market Status</th>
+                            <th class="px-6 py-4 border-b border-slate-100 text-right">Avg Earnings</th>
                         </tr>
                     </thead>
-                    <tbody class="text-gray-600 text-sm font-light bg-white" id="occupationTableBody">
+                    <tbody id="occupationTableBody" class="divide-y divide-slate-100">
                         <!-- Data inserted via JS -->
                     </tbody>
                 </table>
             </div>
         </div>
 
-    </div>
+    </main>
 
-    <!-- Data Methodology & Sources Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-auto">
-        <div class="container mx-auto px-6 py-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm">
-                
-                <!-- Column 1: Methodology -->
-                <div>
-                    <h4 class="font-bold text-gray-900 mb-3 uppercase tracking-wide">Methodology</h4>
-                    <p class="text-gray-600 leading-relaxed">
-                        This dashboard aggregates data from open government datasets and simulates real-time market fluctuations for demonstration purposes. 
-                        Updates occur daily at 08:00 NZT via automated GitHub Actions.
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-auto">
+        <div class="container mx-auto px-4 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i class="fa-solid fa-chart-simple text-blue-600"></i>
+                        <span class="font-bold text-slate-900">NZ Occupation Monitor</span>
+                    </div>
+                    <p class="text-slate-500 text-sm leading-relaxed max-w-sm">
+                        Empowering job seekers and policy makers with automated insights from the New Zealand labour market. Data aggregated from public government datasets.
                     </p>
                 </div>
-
-                <!-- Column 2: Data Sources -->
                 <div>
-                    <h4 class="font-bold text-gray-900 mb-3 uppercase tracking-wide">Primary Data Sources</h4>
-                    <ul class="space-y-2 text-gray-600">
-                        <li><i class="fa-solid fa-building-columns w-5 text-gray-400"></i> <a href="https://www.stats.govt.nz" target="_blank" class="source-link">Stats NZ (Labour Market Statistics)</a></li>
-                        <li><i class="fa-solid fa-briefcase w-5 text-gray-400"></i> <a href="https://www.mbie.govt.nz" target="_blank" class="source-link">MBIE (Jobs Online Report)</a></li>
-                        <li><i class="fa-solid fa-globe w-5 text-gray-400"></i> <a href="#" class="source-link">Seek / Trade Me (Aggregated Trends)</a></li>
+                    <h5 class="font-bold text-slate-900 mb-4 text-sm uppercase">Data Sources</h5>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><a href="https://www.stats.govt.nz" target="_blank" class="hover:text-blue-600 transition-colors">Stats NZ Labour Market</a></li>
+                        <li><a href="https://www.mbie.govt.nz" target="_blank" class="hover:text-blue-600 transition-colors">MBIE Jobs Online</a></li>
+                        <li><a href="https://www.immigration.govt.nz/" target="_blank" class="hover:text-blue-600 transition-colors">Immigration NZ (INZ)</a></li>
                     </ul>
                 </div>
-
-                <!-- Column 3: Disclaimer -->
                 <div>
-                    <h4 class="font-bold text-gray-900 mb-3 uppercase tracking-wide">Disclaimer</h4>
-                    <p class="text-gray-500 text-xs leading-relaxed">
-                        This tool is for educational and evaluation purposes. While data mimics real-world trends, specific figures may be simulated. 
-                        Always consult official government releases for critical financial or policy decisions.
-                    </p>
-                    <div class="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-400">
-                        &copy; 2025 Occupation Monitor. <a href="data.json" class="underline">View Raw JSON</a>
-                    </div>
+                    <h5 class="font-bold text-slate-900 mb-4 text-sm uppercase">Legal</h5>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-blue-600 transition-colors">Terms of Service</a></li>
+                        <li class="text-xs text-slate-400 mt-4">Disclaimer: Figures may be simulated for demonstration.</li>
+                    </ul>
                 </div>
+            </div>
+            <div class="border-t border-slate-100 mt-12 pt-8 text-center text-xs text-slate-400">
+                &copy; 2025 NZ Occupation Monitor. Built for modern web standards.
             </div>
         </div>
     </footer>
 
+    <!-- Application Logic -->
     <script>
+        // 1. DATA REPOSITORY (Includes Expanded ANZSCO Database & INZ Data)
+        const defaultData = {
+            "meta": {
+                "last_updated": "2025-12-02",
+                "quarter": "Dec 2025 (Forecast)"
+            },
+            "stats": {
+                "unemployment_rate": 5.3,
+                "employment_rate": 66.6,
+                "unemployment_trend": 0.1,
+                "employment_trend": -0.2
+            },
+            "industries": [
+                { "name": "Healthcare & Social Assistance", "growth_rate": 5.5, "status": "High Demand", "earnings": 44.50, "trend_direction": "up" },
+                { "name": "Education & Training", "growth_rate": 4.3, "status": "Stable", "earnings": 42.80, "trend_direction": "up" },
+                { "name": "Construction", "growth_rate": -6.1, "status": "Contracting", "earnings": 39.20, "trend_direction": "down" },
+                { "name": "ICT Professionals", "growth_rate": 0.8, "status": "Stable", "earnings": 55.00, "trend_direction": "flat" },
+                { "name": "Manufacturing", "growth_rate": -2.5, "status": "Slowing", "earnings": 36.50, "trend_direction": "down" },
+                { "name": "Public Admin & Safety", "growth_rate": 5.2, "status": "Growing", "earnings": 48.10, "trend_direction": "up" }
+            ],
+            // Expanded ANZSCO List with INZ Data
+            "anzsco_list": [
+                // CONSTRUCTION & TRADES
+                { "code": "133111", "title": "Construction Project Manager", "group": "Managers", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "133112", "title": "Project Builder", "group": "Managers", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "312111", "title": "Architectural Draftsperson", "group": "Technicians", "skill_level": 2, "inz_status": "Green List Tier 2" },
+                { "code": "331111", "title": "Bricklayer", "group": "Trades", "skill_level": 3, "inz_status": "Construction Sector Agreement" },
+                { "code": "331211", "title": "Carpenter and Joiner", "group": "Trades", "skill_level": 3, "inz_status": "Construction Sector Agreement" },
+                { "code": "331212", "title": "Carpenter", "group": "Trades", "skill_level": 3, "inz_status": "Construction Sector Agreement" },
+                { "code": "332211", "title": "Painting Trades Worker", "group": "Trades", "skill_level": 3, "inz_status": "Construction Sector Agreement" },
+                { "code": "333211", "title": "Plasterer (Wall and Ceiling)", "group": "Trades", "skill_level": 3, "inz_status": "Construction Sector Agreement" },
+                { "code": "333411", "title": "Wall and Floor Tiler", "group": "Trades", "skill_level": 3, "inz_status": "Construction Sector Agreement" },
+                { "code": "334111", "title": "Plumber (General)", "group": "Trades", "skill_level": 3, "inz_status": "Green List Tier 2" },
+                { "code": "341111", "title": "Electrician (General)", "group": "Trades", "skill_level": 3, "inz_status": "Green List Tier 2" },
+                { "code": "342111", "title": "Airconditioning and Refrigeration Mechanic", "group": "Trades", "skill_level": 3, "inz_status": "Green List Tier 2" },
+                { "code": "342313", "title": "Electronic Equipment Trades Worker", "group": "Trades", "skill_level": 3, "inz_status": "Green List Tier 2" },
+
+                // HEALTHCARE
+                { "code": "251211", "title": "Medical Diagnostic Radiographer", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "251512", "title": "Retail Pharmacist", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "252111", "title": "Chiropractor", "group": "Professionals", "skill_level": 1, "inz_status": "Standard" },
+                { "code": "252411", "title": "Occupational Therapist", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "252511", "title": "Physiotherapist", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "253111", "title": "General Practitioner", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "253112", "title": "Resident Medical Officer", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "253311", "title": "Specialist Physician (General Medicine)", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "253511", "title": "Surgeon (General)", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "253912", "title": "Emergency Medicine Specialist", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "254111", "title": "Midwife", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "254411", "title": "Nurse Practitioner", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "254499", "title": "Registered Nurses nec", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "272311", "title": "Clinical Psychologist", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "411111", "title": "Ambulance Officer", "group": "Community", "skill_level": 2, "inz_status": "Standard" },
+                { "code": "411411", "title": "Enrolled Nurse", "group": "Community", "skill_level": 2, "inz_status": "Green List Tier 2" },
+                { "code": "423111", "title": "Aged or Disabled Carer", "group": "Community", "skill_level": 4, "inz_status": "Care Workforce Agreement" },
+
+                // ENGINEERING & ICT
+                { "code": "135112", "title": "ICT Project Manager", "group": "Managers", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "233211", "title": "Civil Engineer", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "233214", "title": "Structural Engineer", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "233311", "title": "Electrical Engineer", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "233512", "title": "Mechanical Engineer", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "233914", "title": "Engineering Technologist", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "261111", "title": "ICT Business Analyst", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "261311", "title": "Analyst Programmer", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "261312", "title": "Developer Programmer", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "261313", "title": "Software Engineer", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "262111", "title": "Database Administrator", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "262112", "title": "ICT Security Specialist", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "263111", "title": "Computer Network and Systems Engineer", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "313111", "title": "Hardware Technician", "group": "Technicians", "skill_level": 2, "inz_status": "Standard" },
+
+                // EDUCATION
+                { "code": "241111", "title": "Early Childhood (Pre-primary School) Teacher", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 2" },
+                { "code": "241213", "title": "Primary School Teacher", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 2" },
+                { "code": "241411", "title": "Secondary School Teacher", "group": "Professionals", "skill_level": 1, "inz_status": "Green List Tier 2" },
+                { "code": "242111", "title": "University Lecturer", "group": "Professionals", "skill_level": 1, "inz_status": "Standard" },
+
+                // AGRICULTURE & OTHERS
+                { "code": "121311", "title": "Apiarist", "group": "Managers", "skill_level": 3, "inz_status": "Standard" },
+                { "code": "121312", "title": "Beef Cattle Farmer", "group": "Managers", "skill_level": 1, "inz_status": "Standard" },
+                { "code": "121313", "title": "Dairy Cattle Farmer", "group": "Managers", "skill_level": 1, "inz_status": "Green List Tier 1" },
+                { "code": "361112", "title": "Horse Trainer", "group": "Technicians", "skill_level": 3, "inz_status": "Standard" },
+                { "code": "733111", "title": "Bus Driver", "group": "Machinery", "skill_level": 4, "inz_status": "Transport Sector Agreement" },
+                { "code": "731111", "title": "Truck Driver (General)", "group": "Machinery", "skill_level": 4, "inz_status": "Transport Sector Agreement" },
+                { "code": "841111", "title": "Crop Farm Worker", "group": "Labourers", "skill_level": 5, "inz_status": "Standard" }
+            ]
+        };
+
+        // 2. APP INITIALIZATION
         async function loadData() {
             try {
                 const response = await fetch('data.json');
-                if (!response.ok) throw new Error("Failed to load");
-                const data = await response.json();
-                updateDashboard(data);
+                if (!response.ok) throw new Error("Fallback needed");
+                const fetchedData = await response.json();
+                if(!fetchedData.anzsco_list) fetchedData.anzsco_list = defaultData.anzsco_list;
+                updateUI(fetchedData);
             } catch (error) {
-                console.error(error);
-                document.getElementById('lastUpdatedText').innerHTML = 'Error loading data';
-                document.getElementById('statusBadge').classList.add('bg-red-900');
+                console.log("Using built-in data source (Preview Mode)");
+                updateUI(defaultData);
             }
         }
 
-        function updateDashboard(data) {
-            // Update "Live" Badge
-            const dateStr = data.meta.last_updated;
-            document.getElementById('lastUpdatedText').innerHTML = `Data Updated: ${dateStr}`;
+        // 3. UI UPDATE LOGIC
+        function updateUI(data) {
+            if (data.meta) {
+                 document.getElementById('lastUpdatedText').innerText = `Updated: ${data.meta.last_updated}`;
+            }
 
-            // Update Metrics
-            document.getElementById('stat-unemployment').innerText = data.stats.unemployment_rate + '%';
-            
-            // Unemployment Trend Logic
-            const uTrend = data.stats.unemployment_trend;
-            const uEl = document.getElementById('trend-unemployment');
-            uEl.innerHTML = `<i class="fa-solid ${uTrend > 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i> ${uTrend > 0 ? '+' : ''}${uTrend}% vs last quarter`;
-            uEl.className = uTrend > 0 ? "text-xs text-red-600 mt-2 font-bold" : "text-xs text-green-600 mt-2 font-bold";
-
+            updateCard('unemployment', data.stats.unemployment_rate + '%', data.stats.unemployment_trend);
             document.getElementById('stat-employment').innerText = data.stats.employment_rate + '%';
-            document.getElementById('trend-employment').innerText = "Stable (Seasonally Adjusted)";
             
-            // Find Top/Bottom Growth
             const sorted = [...data.industries].sort((a,b) => b.growth_rate - a.growth_rate);
-            const best = sorted[0];
-            const worst = sorted[sorted.length - 1];
-
-            document.getElementById('stat-growth-name').innerText = best.name;
-            document.getElementById('stat-growth-val').innerText = `+${best.growth_rate}% Annual Growth`;
+            document.getElementById('stat-growth-name').innerText = sorted[0].name;
+            document.getElementById('stat-growth-val').innerText = `+${sorted[0].growth_rate}%`;
             
-            document.getElementById('stat-decline-name').innerText = worst.name;
-            document.getElementById('stat-decline-val').innerText = `${worst.growth_rate}% Annual Decline`;
+            const last = sorted[sorted.length - 1];
+            document.getElementById('stat-decline-name').innerText = last.name;
+            document.getElementById('stat-decline-val').innerText = `${last.growth_rate}%`;
 
-            // Populate Table
+            renderTable(data.industries);
+            renderCharts(data);
+        }
+
+        function updateCard(id, value, trend) {
+            document.getElementById(`stat-${id}`).innerText = value;
+            const trendEl = document.getElementById(`trend-${id}`);
+            if (trend > 0) {
+                trendEl.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> +${trend}%`;
+                trendEl.className = "font-bold mr-1 text-red-500";
+            } else {
+                trendEl.innerHTML = `<i class="fa-solid fa-arrow-trend-down"></i> ${trend}%`;
+                trendEl.className = "font-bold mr-1 text-emerald-500";
+            }
+        }
+
+        function renderTable(industries) {
             const tbody = document.getElementById('occupationTableBody');
             tbody.innerHTML = '';
-            data.industries.forEach(ind => {
-                let iconClass = ind.trend_direction === 'up' ? 'fa-arrow-up text-green-500' : 
-                               (ind.trend_direction === 'down' ? 'fa-arrow-down text-red-500' : 'fa-minus text-gray-400');
-                
-                let statusStyle = ind.status.includes('High') || ind.status.includes('Growing') ? 'bg-green-100 text-green-800 border-green-200' : 
-                                  (ind.status.includes('Contracting') ? 'bg-red-100 text-red-800 border-red-200' : 'bg-blue-100 text-blue-800 border-blue-200');
+            
+            industries.forEach(ind => {
+                let statusBadge = '';
+                if (ind.status.includes('High') || ind.status.includes('Growing')) {
+                    statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full text-xs font-bold border border-emerald-200">Growing</span>`;
+                } else if (ind.status.includes('Contracting') || ind.status.includes('Slowing')) {
+                    statusBadge = `<span class="bg-red-50 text-red-700 px-2.5 py-0.5 rounded-full text-xs font-bold border border-red-200">Declining</span>`;
+                } else {
+                    statusBadge = `<span class="bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full text-xs font-bold border border-blue-200">Stable</span>`;
+                }
 
-                let row = `
-                    <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                        <td class="py-4 px-6 font-medium text-gray-900">${ind.name}</td>
-                        <td class="py-4 px-6"><i class="fa-solid ${iconClass}"></i></td>
-                        <td class="py-4 px-6 font-bold ${ind.growth_rate > 0 ? 'text-green-600' : 'text-red-600'}">
+                const row = `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 font-medium text-slate-900 border-b border-slate-50">${ind.name}</td>
+                        <td class="px-6 py-4 border-b border-slate-50">
+                            ${ind.trend_direction === 'up' ? '<i class="fa-solid fa-arrow-trend-up text-emerald-500"></i>' : 
+                              (ind.trend_direction === 'down' ? '<i class="fa-solid fa-arrow-trend-down text-red-500"></i>' : '<i class="fa-solid fa-minus text-slate-400"></i>')}
+                        </td>
+                        <td class="px-6 py-4 font-bold border-b border-slate-50 ${ind.growth_rate > 0 ? 'text-emerald-600' : 'text-red-600'}">
                             ${ind.growth_rate > 0 ? '+' : ''}${ind.growth_rate}%
                         </td>
-                        <td class="py-4 px-6">
-                            <span class="${statusStyle} py-1 px-3 rounded-full text-xs font-semibold border">${ind.status}</span>
-                        </td>
-                        <td class="py-4 px-6 text-gray-600">$${ind.earnings.toFixed(2)}</td>
+                        <td class="px-6 py-4 border-b border-slate-50">${statusBadge}</td>
+                        <td class="px-6 py-4 text-right border-b border-slate-50 font-mono text-slate-600">$${ind.earnings.toFixed(2)}</td>
                     </tr>
                 `;
                 tbody.insertAdjacentHTML('beforeend', row);
             });
-
-            initCharts(data);
         }
 
-        function initCharts(data) {
-            // Growth Chart
-            new Chart(document.getElementById('growthChart').getContext('2d'), {
+        function renderCharts(data) {
+            new Chart(document.getElementById('growthChart'), {
                 type: 'bar',
                 data: {
                     labels: data.industries.map(i => i.name),
                     datasets: [{
-                        label: 'Growth Rate (%)',
+                        label: 'Annual Growth (%)',
                         data: data.industries.map(i => i.growth_rate),
-                        backgroundColor: data.industries.map(i => i.growth_rate >= 0 ? '#4ade80' : '#f87171'),
-                        borderRadius: 4
+                        backgroundColor: data.industries.map(i => i.growth_rate >= 0 ? '#10b981' : '#f43f5e'),
+                        borderRadius: 6,
+                        barThickness: 25
                     }]
                 },
-                options: { 
-                    responsive: true, 
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
-                    scales: { y: { grid: { display: false } } }
+                    scales: {
+                        y: { grid: { borderDash: [2, 4], color: '#e2e8f0' } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+                    }
                 }
             });
 
-            // Unemployment Chart
-            new Chart(document.getElementById('unemploymentChart').getContext('2d'), {
+            new Chart(document.getElementById('unemploymentChart'), {
                 type: 'line',
                 data: {
-                    labels: ['Dec', 'Mar', 'Jun', 'Sep', 'Forecast'],
+                    labels: ['Dec 24', 'Mar 25', 'Jun 25', 'Sep 25', 'Forecast'],
                     datasets: [{
                         label: 'Unemployment Rate',
                         data: [5.1, 5.1, 5.2, 5.3, data.stats.unemployment_rate],
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: '#2563eb',
+                        backgroundColor: (context) => {
+                            const ctx = context.chart.ctx;
+                            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                            gradient.addColorStop(0, 'rgba(37,99,235,0.2)');
+                            gradient.addColorStop(1, 'rgba(37,99,235,0)');
+                            return gradient;
+                        },
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }]
                 },
-                options: { responsive: true }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { min: 4, max: 6, grid: { borderDash: [2, 4] } } }
+                }
             });
         }
 
-        function filterTable() {
-            const filter = document.getElementById("searchInput").value.toUpperCase();
-            const rows = document.getElementById("occupationTableBody").getElementsByTagName("tr");
+        // 5. SEARCH ENGINE LOGIC (Enhanced with INZ Status)
+        function handleGlobalSearch() {
+            const input = document.getElementById('globalSearch').value.toLowerCase();
+            const panel = document.getElementById('searchResultsPanel');
+            const tbody = document.getElementById('anzscoResultsBody');
+            const noRes = document.getElementById('noResultsMsg');
+            
+            if (input.length < 2) {
+                panel.classList.add('hidden');
+                return;
+            }
+
+            panel.classList.remove('hidden');
+            tbody.innerHTML = '';
+            
+            const results = defaultData.anzsco_list.filter(item => 
+                item.title.toLowerCase().includes(input) || 
+                item.code.includes(input) ||
+                (item.inz_status && item.inz_status.toLowerCase().includes(input))
+            );
+
+            if (results.length === 0) {
+                noRes.classList.remove('hidden');
+            } else {
+                noRes.classList.add('hidden');
+                results.forEach(item => {
+                    let inzBadge = '';
+                    if (item.inz_status.includes('Green List Tier 1')) {
+                        inzBadge = `<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs border border-green-200 font-bold"><i class="fa-solid fa-check-double"></i> Green List Tier 1</span>`;
+                    } else if (item.inz_status.includes('Green List Tier 2')) {
+                        inzBadge = `<span class="bg-green-50 text-green-600 px-2 py-1 rounded text-xs border border-green-200"><i class="fa-solid fa-check"></i> Green List Tier 2</span>`;
+                    } else if (item.inz_status.includes('Sector Agreement')) {
+                        inzBadge = `<span class="bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs border border-orange-200"><i class="fa-solid fa-handshake"></i> ${item.inz_status}</span>`;
+                    } else {
+                        inzBadge = `<span class="text-slate-400 text-xs">Standard Pathway</span>`;
+                    }
+
+                    const row = `
+                        <tr class="hover:bg-blue-50 cursor-default transition-colors group">
+                            <td class="px-6 py-3 font-mono text-blue-600 font-semibold group-hover:text-blue-800">${item.code}</td>
+                            <td class="px-6 py-3 font-medium text-slate-800">${item.title}</td>
+                            <td class="px-6 py-3">
+                                <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs border border-slate-200">Level ${item.skill_level}</span>
+                            </td>
+                            <td class="px-6 py-3">${inzBadge}</td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+            }
+        }
+
+        function closeSearch() {
+            document.getElementById('searchResultsPanel').classList.add('hidden');
+            document.getElementById('globalSearch').value = '';
+        }
+
+        function filterSectorTable() {
+            const filter = document.getElementById('sectorFilter').value.toLowerCase();
+            const rows = document.getElementById('occupationTableBody').getElementsByTagName('tr');
             for (let row of rows) {
-                const txt = row.cells[0].textContent || row.cells[0].innerText;
-                row.style.display = txt.toUpperCase().indexOf(filter) > -1 ? "" : "none";
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
             }
         }
 
