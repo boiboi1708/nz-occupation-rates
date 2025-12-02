@@ -14,42 +14,42 @@
             "name": "Healthcare & Social Assistance",
             "growth_rate": 5.5,
             "status": "High Demand",
-            "earnings": 44.50,
+            "earnings": 44.5,
             "trend_direction": "up"
         },
         {
             "name": "Education & Training",
             "growth_rate": 4.3,
             "status": "Stable",
-            "earnings": 42.80,
+            "earnings": 42.8,
             "trend_direction": "up"
         },
         {
             "name": "Construction",
             "growth_rate": -6.1,
             "status": "Contracting",
-            "earnings": 39.20,
+            "earnings": 39.2,
             "trend_direction": "down"
         },
         {
             "name": "ICT Professionals",
             "growth_rate": 0.8,
             "status": "Stable",
-            "earnings": 55.00,
+            "earnings": 55.0,
             "trend_direction": "flat"
         },
         {
             "name": "Manufacturing",
             "growth_rate": -2.5,
             "status": "Slowing",
-            "earnings": 36.50,
+            "earnings": 36.5,
             "trend_direction": "down"
         },
         {
             "name": "Public Admin & Safety",
             "growth_rate": 5.2,
             "status": "Growing",
-            "earnings": 48.10,
+            "earnings": 48.1,
             "trend_direction": "up"
         }
     ]
