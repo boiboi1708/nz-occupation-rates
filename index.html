@@ -1,283 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NZ Occupation Rates Monitor 2025</title>
-    <!-- Tailwind CSS for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js for graphs -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
-        .card { transition: transform 0.2s; }
-        .card:hover { transform: translateY(-5px); }
-    </style>
-</head>
-<body class="text-gray-800">
+import json
+import random
+from datetime import datetime
 
-    <!-- Navigation Bar -->
-    <nav class="bg-blue-900 text-white shadow-lg">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <i class="fa-solid fa-chart-line text-2xl"></i>
-                <h1 class="text-2xl font-bold">NZ Occupation Monitor</h1>
-            </div>
-            <div class="text-sm bg-blue-800 py-1 px-3 rounded-full">
-                <i class="fa-regular fa-clock"></i> Data: Sep/Dec 2025 (Forecast)
-            </div>
-        </div>
-    </nav>
+# 1. Load existing data
+with open('data.json', 'r') as f:
+    data = json.load(f)
 
-    <!-- Main Content -->
-    <div class="container mx-auto px-6 py-8">
+# 2. Simulate "Fetching" new data
+# (In a real scenario, this is where we would call the Stats NZ API)
+print("Fetching latest occupation stats...")
 
-        <!-- Welcome Section -->
-        <div class="mb-8 text-center">
-            <h2 class="text-3xl font-bold text-gray-900">New Zealand Employment Dashboard</h2>
-            <p class="text-gray-600 mt-2">Evaluating current occupation trends, growth sectors, and unemployment statistics.</p>
-        </div>
+# Simulate small market fluctuations
+variation = random.uniform(-0.1, 0.1)
+new_unemployment = round(data['stats']['unemployment_rate'] + variation, 1)
 
-        <!-- Key Metrics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <!-- Metric 1 -->
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500 card">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-gray-500 text-sm">Unemployment Rate</p>
-                        <h3 class="text-3xl font-bold text-gray-800">5.3%</h3>
-                    </div>
-                    <div class="bg-blue-100 p-3 rounded-full text-blue-600">
-                        <i class="fa-solid fa-users-slash"></i>
-                    </div>
-                </div>
-                <p class="text-xs text-red-500 mt-2"><i class="fa-solid fa-arrow-trend-up"></i> +0.1% vs prev quarter</p>
-            </div>
+# Ensure it stays within realistic NZ bounds (3% to 6%)
+new_unemployment = max(3.0, min(6.0, new_unemployment))
 
-            <!-- Metric 2 -->
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500 card">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-gray-500 text-sm">Employment Rate</p>
-                        <h3 class="text-3xl font-bold text-gray-800">66.6%</h3>
-                    </div>
-                    <div class="bg-green-100 p-3 rounded-full text-green-600">
-                        <i class="fa-solid fa-briefcase"></i>
-                    </div>
-                </div>
-                <p class="text-xs text-gray-500 mt-2">Stable (Seasonally Adjusted)</p>
-            </div>
+# 3. Update the data structure
+data['meta']['last_updated'] = datetime.now().strftime("%Y-%m-%d")
+data['stats']['unemployment_rate'] = new_unemployment
 
-            <!-- Metric 3 -->
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500 card">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-gray-500 text-sm">Highest Growth</p>
-                        <h3 class="text-xl font-bold text-gray-800">Healthcare</h3>
-                    </div>
-                    <div class="bg-purple-100 p-3 rounded-full text-purple-600">
-                        <i class="fa-solid fa-user-nurse"></i>
-                    </div>
-                </div>
-                <p class="text-xs text-green-500 mt-2"><i class="fa-solid fa-arrow-up"></i> +5.5% annual growth</p>
-            </div>
+# Update trend arrows based on the random change
+if variation > 0:
+    data['stats']['unemployment_trend'] = 0.1
+else:
+    data['stats']['unemployment_trend'] = -0.1
 
-             <!-- Metric 4 -->
-             <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-orange-500 card">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-gray-500 text-sm">Declining Sector</p>
-                        <h3 class="text-xl font-bold text-gray-800">Construction</h3>
-                    </div>
-                    <div class="bg-orange-100 p-3 rounded-full text-orange-600">
-                        <i class="fa-solid fa-trowel-bricks"></i>
-                    </div>
-                </div>
-                <p class="text-xs text-red-500 mt-2"><i class="fa-solid fa-arrow-down"></i> -6.1% slowdown</p>
-            </div>
-        </div>
+# 4. Save the file back
+with open('data.json', 'w') as f:
+    json.dump(data, f, indent=4)
 
-        <!-- Charts Section -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Top Industry Growth (Yearly %)</h3>
-                <canvas id="growthChart"></canvas>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Unemployment Trend (2024-2025)</h3>
-                <canvas id="unemploymentChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Detailed Data Table -->
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                <h3 class="text-xl font-bold text-gray-800">Occupation Rate Evaluation</h3>
-                <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search occupation..." class="border border-gray-300 rounded-md px-4 py-2 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse" id="occupationTable">
-                    <thead>
-                        <tr class="bg-gray-50 text-gray-600 uppercase text-sm leading-normal">
-                            <th class="py-3 px-6">Occupation / Industry</th>
-                            <th class="py-3 px-6">Trend</th>
-                            <th class="py-3 px-6">Growth Rate</th>
-                            <th class="py-3 px-6">Status</th>
-                            <th class="py-3 px-6">Avg Hourly Earnings (NZD)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 text-sm font-light">
-                        <!-- Row 1 -->
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
-                            <td class="py-3 px-6 flex items-center">
-                                <span class="font-medium">Healthcare & Social Assistance</span>
-                            </td>
-                            <td class="py-3 px-6"><i class="fa-solid fa-arrow-up text-green-500"></i></td>
-                            <td class="py-3 px-6 text-green-600 font-bold">+5.5%</td>
-                            <td class="py-3 px-6"><span class="bg-green-200 text-green-700 py-1 px-3 rounded-full text-xs">High Demand</span></td>
-                            <td class="py-3 px-6">$44.50</td>
-                        </tr>
-                        <!-- Row 2 -->
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
-                            <td class="py-3 px-6 flex items-center">
-                                <span class="font-medium">Education & Training</span>
-                            </td>
-                            <td class="py-3 px-6"><i class="fa-solid fa-arrow-up text-green-500"></i></td>
-                            <td class="py-3 px-6 text-green-600 font-bold">+4.3%</td>
-                            <td class="py-3 px-6"><span class="bg-blue-200 text-blue-700 py-1 px-3 rounded-full text-xs">Stable</span></td>
-                            <td class="py-3 px-6">$42.80</td>
-                        </tr>
-                        <!-- Row 3 -->
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
-                            <td class="py-3 px-6 flex items-center">
-                                <span class="font-medium">Construction</span>
-                            </td>
-                            <td class="py-3 px-6"><i class="fa-solid fa-arrow-down text-red-500"></i></td>
-                            <td class="py-3 px-6 text-red-600 font-bold">-6.1%</td>
-                            <td class="py-3 px-6"><span class="bg-red-200 text-red-700 py-1 px-3 rounded-full text-xs">Contracting</span></td>
-                            <td class="py-3 px-6">$39.20</td>
-                        </tr>
-                        <!-- Row 4 -->
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
-                            <td class="py-3 px-6 flex items-center">
-                                <span class="font-medium">ICT Professionals</span>
-                            </td>
-                            <td class="py-3 px-6"><i class="fa-solid fa-minus text-gray-500"></i></td>
-                            <td class="py-3 px-6 text-gray-600 font-bold">0.8%</td>
-                            <td class="py-3 px-6"><span class="bg-blue-200 text-blue-700 py-1 px-3 rounded-full text-xs">Stable</span></td>
-                            <td class="py-3 px-6">$55.00+</td>
-                        </tr>
-                         <!-- Row 5 -->
-                         <tr class="border-b border-gray-200 hover:bg-gray-100">
-                            <td class="py-3 px-6 flex items-center">
-                                <span class="font-medium">Manufacturing</span>
-                            </td>
-                            <td class="py-3 px-6"><i class="fa-solid fa-arrow-down text-red-500"></i></td>
-                            <td class="py-3 px-6 text-red-600 font-bold">-2.5%</td>
-                            <td class="py-3 px-6"><span class="bg-orange-200 text-orange-700 py-1 px-3 rounded-full text-xs">Slowing</span></td>
-                            <td class="py-3 px-6">$36.50</td>
-                        </tr>
-                        <!-- Row 6 -->
-                        <tr class="border-b border-gray-200 hover:bg-gray-100">
-                            <td class="py-3 px-6 flex items-center">
-                                <span class="font-medium">Public Admin & Safety</span>
-                            </td>
-                            <td class="py-3 px-6"><i class="fa-solid fa-arrow-up text-green-500"></i></td>
-                            <td class="py-3 px-6 text-green-600 font-bold">+5.2%</td>
-                            <td class="py-3 px-6"><span class="bg-green-200 text-green-700 py-1 px-3 rounded-full text-xs">Growing</span></td>
-                            <td class="py-3 px-6">$48.10</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <div class="mt-8 text-center text-gray-500 text-sm">
-            <p>Data sources: Stats NZ, MBIE (Mock Data for Demonstration)</p>
-            <p>&copy; 2025 NZ Occupation Monitor</p>
-        </div>
-
-    </div>
-
-    <!-- Scripts for Functionality -->
-    <script>
-        // 1. Chart Configuration
-        
-        // Bar Chart: Growth by Industry
-        const ctxGrowth = document.getElementById('growthChart').getContext('2d');
-        new Chart(ctxGrowth, {
-            type: 'bar',
-            data: {
-                labels: ['Healthcare', 'Education', 'Public Admin', 'ICT', 'Retail', 'Manufacturing', 'Construction'],
-                datasets: [{
-                    label: 'Annual Growth Rate (%)',
-                    data: [5.5, 4.3, 5.2, 0.8, -1.0, -2.5, -6.1],
-                    backgroundColor: [
-                        'rgba(34, 197, 94, 0.7)', // Green
-                        'rgba(34, 197, 94, 0.7)',
-                        'rgba(34, 197, 94, 0.7)',
-                        'rgba(59, 130, 246, 0.7)', // Blue
-                        'rgba(234, 179, 8, 0.7)',  // Yellow
-                        'rgba(239, 68, 68, 0.7)',  // Red
-                        'rgba(239, 68, 68, 0.7)'
-                    ],
-                    borderColor: 'rgba(0,0,0,0.1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true }
-                }
-            }
-        });
-
-        // Line Chart: Unemployment Trend
-        const ctxUnemp = document.getElementById('unemploymentChart').getContext('2d');
-        new Chart(ctxUnemp, {
-            type: 'line',
-            data: {
-                labels: ['Dec 24', 'Mar 25', 'Jun 25', 'Sep 25', 'Dec 25 (Proj)'],
-                datasets: [{
-                    label: 'Unemployment Rate (%)',
-                    data: [5.1, 5.1, 5.2, 5.3, 5.4],
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                    tension: 0.3
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { min: 4, max: 6 }
-                }
-            }
-        });
-
-        // 2. Search Functionality
-        function filterTable() {
-            var input, filter, table, tr, td, i, txtValue;
-            input = document.getElementById("searchInput");
-            filter = input.value.toUpperCase();
-            table = document.getElementById("occupationTable");
-            tr = table.getElementsByTagName("tr");
-
-            for (i = 0; i < tr.length; i++) {
-                td = tr[i].getElementsByTagName("td")[0]; // Look at the first column (Occupation Name)
-                if (td) {
-                    txtValue = td.textContent || td.innerText;
-                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                        tr[i].style.display = "";
-                    } else {
-                        tr[i].style.display = "none";
-                    }
-                }       
-            }
-        }
-    </script>
-</body>
-</html>
+print(f"Data updated successfully. New Unemployment Rate: {new_unemployment}%")
