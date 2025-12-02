@@ -1,0 +1,33 @@
+name: Daily Data Update
+
+on:
+  schedule:
+    # Run at 20:00 UTC daily (which is morning in NZ)
+    - cron: '0 20 * * *'
+  workflow_dispatch: # Allows you to click a button to run it manually
+
+permissions:
+  contents: write
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Run Update Script
+        run: python scripts/update_stats.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "GitHub Action Bot"
+          git config --global user.email "bot@github.com"
+          git add data.json
+          git commit -m "Auto-update occupation stats" || echo "No changes to commit"
+          git push
