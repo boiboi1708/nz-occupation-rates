@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Markdown Parser for AI Text -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
@@ -20,18 +22,59 @@
         .card-hover { transition: all 0.3s ease; }
         .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15); }
         
+        /* AI Modal Animations */
+        .ai-gradient-text { background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .typing-cursor::after { content: '|'; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Animation */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
     </style>
 </head>
 <body class="flex flex-col min-h-screen text-slate-800">
+
+    <!-- AI Analysis Modal -->
+    <div id="aiModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+            <!-- Modal Header -->
+            <div class="bg-slate-50 border-b border-slate-100 p-6 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-2 rounded-lg">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg">Gemini Market Analyst</h3>
+                        <p class="text-xs text-slate-500">Powered by AI Insights</p>
+                    </div>
+                </div>
+                <button onclick="closeAiModal()" class="text-slate-400 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="p-8 min-h-[300px] flex flex-col">
+                <div id="aiLoading" class="flex flex-col items-center justify-center h-full py-12">
+                    <i class="fa-solid fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i>
+                    <p class="text-slate-500 animate-pulse">Analyzing market data...</p>
+                </div>
+                <div id="aiContent" class="hidden prose prose-slate max-w-none">
+                    <!-- AI Text Injected Here -->
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-50 p-4 border-t border-slate-100 text-right">
+                <button onclick="closeAiModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">Close</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Top Navigation -->
     <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 transition-all">
@@ -47,7 +90,6 @@
             </div>
             
             <div class="flex items-center gap-4">
-                <!-- Region Selector -->
                 <div class="hidden md:flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
                     <span class="text-xs font-bold text-slate-500 px-3 uppercase tracking-wider">Region:</span>
                     <select id="regionSelector" onchange="updateRegion()" class="bg-transparent text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer">
@@ -58,7 +100,6 @@
                         <option value="Waikato">Waikato</option>
                     </select>
                 </div>
-
                 <div id="statusBadge" class="hidden md:flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
                     <div class="relative flex h-2.5 w-2.5">
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -77,7 +118,7 @@
             <span class="inline-block py-1 px-3 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-bold uppercase tracking-widest mb-4 backdrop-blur-sm">2025 Data Update</span>
             <h2 class="text-3xl md:text-5xl font-bold mb-6 tracking-tight">Employment Insights Engine</h2>
             <p class="text-slate-300 text-lg max-w-2xl mx-auto mb-8 font-light">
-                Analyze occupation trends, regional job volumes, and check official <strong>Green List</strong> visa pathways instantly.
+                Analyze occupation trends, regional job volumes, and get <strong>AI-Powered</strong> performance reviews instantly.
             </p>
             
             <!-- Global Search Bar -->
@@ -95,7 +136,7 @@
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8 -mt-8 flex-grow relative z-20">
         
-        <!-- Search Results Panel (Hidden by default) -->
+        <!-- Search Results Panel -->
         <div id="searchResultsPanel" class="hidden bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden mb-8 animate-fade-in ring-1 ring-black/5">
             <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center backdrop-blur-sm">
                 <h3 class="font-bold text-slate-700 flex items-center gap-2">
@@ -109,10 +150,10 @@
                 <table class="w-full text-left text-sm">
                     <thead class="bg-slate-50 sticky top-0 z-10 shadow-sm">
                         <tr>
-                            <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider w-32">ANZSCO</th>
+                            <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider w-24">ANZSCO</th>
                             <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Job Title</th>
-                            <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider w-32">Skill Level</th>
-                            <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Visa Pathway</th>
+                            <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider">Visa & Outlook</th>
+                            <th class="px-6 py-4 font-semibold text-slate-500 text-xs uppercase tracking-wider text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody id="anzscoResultsBody" class="divide-y divide-slate-100">
@@ -126,7 +167,7 @@
             </div>
         </div>
 
-        <!-- Mobile Region Selector (Visible only on small screens) -->
+        <!-- Mobile Region Selector -->
         <div class="md:hidden mb-6">
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Select Region</label>
             <select id="mobileRegionSelector" onchange="updateRegionMobile()" class="w-full p-3 rounded-xl border border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-blue-500">
@@ -211,7 +252,6 @@
 
         <!-- Charts Row -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <!-- Job Distribution Map (Donut Chart) -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-1">
                 <div class="flex justify-between items-center mb-4">
                     <h4 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Jobs by Region</h4>
@@ -222,7 +262,6 @@
                 <p class="text-xs text-center text-slate-400 mt-4">Simulated distribution based on active listings</p>
             </div>
 
-            <!-- Industry Growth -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
                 <div class="flex justify-between items-center mb-6">
                     <h4 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Industry Growth & Unemployment Trend</h4>
@@ -272,7 +311,6 @@
 
     </main>
 
-    <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 mt-auto">
         <div class="container mx-auto px-4 py-12">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -284,7 +322,7 @@
                         <span class="font-bold text-slate-900 text-lg">NZ Occupation Monitor</span>
                     </div>
                     <p class="text-slate-500 text-sm leading-relaxed max-w-sm">
-                        Empowering job seekers, employers, and policy makers with automated insights from the New Zealand labour market. 
+                        Empowering job seekers, employers, and policy makers with automated insights.
                     </p>
                 </div>
                 <div>
@@ -300,21 +338,18 @@
                     <ul class="space-y-3 text-sm text-slate-500">
                         <li><a href="#" class="hover:text-blue-600 transition-colors">Privacy Policy</a></li>
                         <li><a href="#" class="hover:text-blue-600 transition-colors">Terms of Service</a></li>
-                        <li class="text-xs text-slate-400 mt-4 bg-slate-50 p-2 rounded">
-                            Disclaimer: Figures are simulated estimates for demonstration. Regional data is modelled.
-                        </li>
+                        <li class="text-xs text-slate-400 mt-4 bg-slate-50 p-2 rounded">Disclaimer: Figures are simulated estimates.</li>
                     </ul>
                 </div>
             </div>
             <div class="border-t border-slate-100 mt-12 pt-8 text-center text-xs text-slate-400">
-                &copy; 2025 NZ Occupation Monitor. Built with <i class="fa-solid fa-heart text-red-400"></i> for New Zealand.
+                &copy; 2025 NZ Occupation Monitor. Built for New Zealand.
             </div>
         </div>
     </footer>
 
-    <!-- Application Logic -->
     <script>
-        // 1. DATA REPOSITORY
+        // 1. DATA REPOSITORY (Enriched with Salary & Outlook)
         const defaultData = {
             "meta": { "last_updated": "2025-12-02", "quarter": "Dec 2025 (Forecast)" },
             "stats": {
@@ -323,7 +358,6 @@
                 "unemployment_trend": 0.1,
                 "employment_trend": -0.2
             },
-            // Base Industry Data with National Job Counts
             "industries": [
                 { "name": "Healthcare & Social Assistance", "growth_rate": 5.5, "status": "High Demand", "earnings": 44.50, "trend_direction": "up", "vacancies": 3450 },
                 { "name": "Education & Training", "growth_rate": 4.3, "status": "Stable", "earnings": 42.80, "trend_direction": "up", "vacancies": 1200 },
@@ -332,38 +366,49 @@
                 { "name": "Manufacturing", "growth_rate": -2.5, "status": "Slowing", "earnings": 36.50, "trend_direction": "down", "vacancies": 600 },
                 { "name": "Public Admin & Safety", "growth_rate": 5.2, "status": "Growing", "earnings": 48.10, "trend_direction": "up", "vacancies": 950 }
             ],
-            // Regional Geography Logic (Multipliers relative to National)
             "regions": {
                 "National": { unemp_mult: 1.0, vacancy_share: 1.0 },
-                "Auckland": { unemp_mult: 0.9, vacancy_share: 0.35 }, // Higher jobs, lower unemp
-                "Wellington": { unemp_mult: 0.85, vacancy_share: 0.15 }, // Gov jobs, low unemp
-                "Canterbury": { unemp_mult: 0.95, vacancy_share: 0.14 }, // Stable
-                "Waikato": { unemp_mult: 1.1, vacancy_share: 0.09 } // Slightly higher unemp
+                "Auckland": { unemp_mult: 0.9, vacancy_share: 0.35 },
+                "Wellington": { unemp_mult: 0.85, vacancy_share: 0.15 },
+                "Canterbury": { unemp_mult: 0.95, vacancy_share: 0.14 },
+                "Waikato": { unemp_mult: 1.1, vacancy_share: 0.09 }
             },
+            // EXPANDED DATA LAYER: Salary & Outlook Added
             "anzsco_list": [
-                // Same extended list as before (Shortened for brevity in this specific block, but fully included in logic)
-                { "code": "133111", "title": "Construction Project Manager", "group": "Managers", "skill_level": 1, "inz_status": "Green List Tier 1" },
-                { "code": "254499", "title": "Registered Nurses nec", "group": "Health", "skill_level": 1, "inz_status": "Green List Tier 1" },
-                { "code": "261313", "title": "Software Engineer", "group": "ICT", "skill_level": 1, "inz_status": "Green List Tier 1" },
-                { "code": "331211", "title": "Carpenter", "group": "Trades", "skill_level": 3, "inz_status": "Construction Sector Agreement" }
+                { "code": "133111", "title": "Construction Project Manager", "group": "Managers", "skill_level": 1, "inz_status": "Green List Tier 1", "salary": "$110k - $180k", "outlook": "Strong Growth" },
+                { "code": "133112", "title": "Project Builder", "group": "Managers", "skill_level": 1, "inz_status": "Green List Tier 1", "salary": "$90k - $140k", "outlook": "Stable" },
+                { "code": "135112", "title": "ICT Project Manager", "group": "Managers", "skill_level": 1, "inz_status": "Green List Tier 1", "salary": "$120k - $170k", "outlook": "High Demand" },
+                { "code": "221111", "title": "Accountant (General)", "group": "Business", "skill_level": 1, "inz_status": "Standard", "salary": "$75k - $110k", "outlook": "Moderate" },
+                { "code": "233211", "title": "Civil Engineer", "group": "Engineering", "skill_level": 1, "inz_status": "Green List Tier 1", "salary": "$85k - $150k", "outlook": "Critical Shortage" },
+                { "code": "233311", "title": "Electrical Engineer", "group": "Engineering", "skill_level": 1, "inz_status": "Green List Tier 1", "salary": "$85k - $140k", "outlook": "High Demand" },
+                { "code": "241111", "title": "Early Childhood Teacher", "group": "Education", "skill_level": 1, "inz_status": "Green List Tier 2", "salary": "$55k - $85k", "outlook": "Very High Demand" },
+                { "code": "254499", "title": "Registered Nurse", "group": "Health", "skill_level": 1, "inz_status": "Green List Tier 1", "salary": "$70k - $100k", "outlook": "Critical Shortage" },
+                { "code": "251512", "title": "Retail Pharmacist", "group": "Health", "skill_level": 1, "inz_status": "Green List Tier 1", "salary": "$90k - $120k", "outlook": "Stable" },
+                { "code": "261313", "title": "Software Engineer", "group": "ICT", "skill_level": 1, "inz_status": "Green List Tier 1", "salary": "$95k - $160k", "outlook": "High Demand" },
+                { "code": "262112", "title": "ICT Security Specialist", "group": "ICT", "skill_level": 1, "inz_status": "Green List Tier 1", "salary": "$110k - $190k", "outlook": "Emerging Growth" },
+                { "code": "331211", "title": "Carpenter", "group": "Trades", "skill_level": 3, "inz_status": "Construction Sector", "salary": "$30 - $45 /hr", "outlook": "High Demand" },
+                { "code": "341111", "title": "Electrician (General)", "group": "Trades", "skill_level": 3, "inz_status": "Green List Tier 2", "salary": "$35 - $50 /hr", "outlook": "High Demand" },
+                { "code": "334111", "title": "Plumber (General)", "group": "Trades", "skill_level": 3, "inz_status": "Green List Tier 2", "salary": "$35 - $55 /hr", "outlook": "High Demand" },
+                { "code": "411411", "title": "Enrolled Nurse", "group": "Health", "skill_level": 2, "inz_status": "Green List Tier 2", "salary": "$55k - $75k", "outlook": "Stable" },
+                { "code": "423111", "title": "Aged or Disabled Carer", "group": "Community", "skill_level": 4, "inz_status": "Care Workforce", "salary": "$28 - $32 /hr", "outlook": "Very High Demand" },
+                { "code": "731111", "title": "Truck Driver (General)", "group": "Machinery", "skill_level": 4, "inz_status": "Transport Sector", "salary": "$28 - $35 /hr", "outlook": "Moderate" }
             ]
         };
 
-        // Current State
+        // State
         let currentRegion = "National";
         let appData = null;
         let charts = {};
 
-        // 2. APP INITIALIZATION
         async function loadData() {
             try {
                 const response = await fetch('data.json');
                 if (!response.ok) throw new Error("Fallback needed");
                 const fetchedData = await response.json();
                 appData = fetchedData;
-                // Merge if missing
                 if(!appData.regions) appData.regions = defaultData.regions;
                 if(!appData.industries[0].vacancies) appData.industries = defaultData.industries;
+                if(!appData.anzsco_list[0].salary) appData.anzsco_list = defaultData.anzsco_list;
             } catch (error) {
                 console.log("Using built-in data source");
                 appData = defaultData;
@@ -371,7 +416,7 @@
             updateUI();
         }
 
-        // 3. UI UPDATE LOGIC
+        // --- CORE UI LOGIC ---
         function updateRegion() {
             currentRegion = document.getElementById('regionSelector').value;
             updateUI();
@@ -379,7 +424,6 @@
         
         function updateRegionMobile() {
             currentRegion = document.getElementById('mobileRegionSelector').value;
-            // Sync desktop selector
             document.getElementById('regionSelector').value = currentRegion;
             updateUI();
         }
@@ -390,11 +434,8 @@
             }
 
             const rData = appData.regions[currentRegion] || appData.regions["National"];
-            
-            // Calc Regional Stats
             const localUnemp = (appData.stats.unemployment_rate * rData.unemp_mult).toFixed(1);
             
-            // Calc Regional Job Counts
             let totalJobs = 0;
             const scaledIndustries = appData.industries.map(ind => {
                 const localVacancies = Math.round(ind.vacancies * rData.vacancy_share);
@@ -402,14 +443,9 @@
                 return { ...ind, localVacancies };
             });
 
-            // Update Cards
             updateCard('unemployment', localUnemp + '%', appData.stats.unemployment_trend);
-            // document.getElementById('stat-employment').innerText = appData.stats.employment_rate + '%'; // REMOVED to fix error
-            
-            // Total Jobs Card
             document.getElementById('stat-job-count').innerText = totalJobs.toLocaleString();
 
-            // Sort for Growth
             const sorted = [...scaledIndustries].sort((a,b) => b.growth_rate - a.growth_rate);
             document.getElementById('stat-growth-name').innerText = sorted[0].name;
             document.getElementById('stat-growth-val').innerText = `+${sorted[0].growth_rate}%`;
@@ -439,27 +475,18 @@
             tbody.innerHTML = '';
             
             industries.forEach(ind => {
-                let statusBadge = '';
-                if (ind.status.includes('High') || ind.status.includes('Growing')) {
-                    statusBadge = `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200">Growing</span>`;
-                } else if (ind.status.includes('Contracting') || ind.status.includes('Slowing')) {
-                    statusBadge = `<span class="bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200">Declining</span>`;
-                } else {
-                    statusBadge = `<span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-200">Stable</span>`;
-                }
+                let statusBadge = ind.status.includes('High') || ind.status.includes('Growing') ? 
+                    `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200">Growing</span>` : 
+                    (ind.status.includes('Contracting') ? `<span class="bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200">Declining</span>` : 
+                    `<span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-200">Stable</span>`);
 
-                // Add "Hot" icon for high vacancy
                 const hotIcon = ind.localVacancies > 500 ? '<i class="fa-solid fa-fire text-orange-500 ml-2" title="High Volume"></i>' : '';
 
                 const row = `
                     <tr class="hover:bg-blue-50/50 transition-colors">
                         <td class="px-6 py-4 font-medium text-slate-900 border-b border-slate-100 whitespace-normal break-words">${ind.name}</td>
-                        <td class="px-6 py-4 border-b border-slate-100 font-bold text-slate-700">
-                            ${ind.localVacancies.toLocaleString()} ${hotIcon}
-                        </td>
-                        <td class="px-6 py-4 font-bold border-b border-slate-100 ${ind.growth_rate > 0 ? 'text-emerald-600' : 'text-red-600'}">
-                            ${ind.growth_rate > 0 ? '+' : ''}${ind.growth_rate}%
-                        </td>
+                        <td class="px-6 py-4 border-b border-slate-100 font-bold text-slate-700">${ind.localVacancies.toLocaleString()} ${hotIcon}</td>
+                        <td class="px-6 py-4 font-bold border-b border-slate-100 ${ind.growth_rate > 0 ? 'text-emerald-600' : 'text-red-600'}">${ind.growth_rate > 0 ? '+' : ''}${ind.growth_rate}%</td>
                         <td class="px-6 py-4 border-b border-slate-100">${statusBadge}</td>
                         <td class="px-6 py-4 text-right border-b border-slate-100 font-mono text-slate-600">$${ind.earnings.toFixed(2)}</td>
                     </tr>
@@ -469,129 +496,69 @@
         }
 
         function renderCharts(industries, currentUnemp) {
-            // Destroy old charts to prevent overlapping
             if (charts.growth) charts.growth.destroy();
             if (charts.unemp) charts.unemp.destroy();
             if (charts.region) charts.region.destroy();
 
-            // Common Options
-            const commonOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { 
-                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                    y: { grid: { borderDash: [4, 4], color: '#e2e8f0', drawBorder: false } }
-                }
-            };
+            const commonOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { grid: { borderDash: [4, 4], color: '#e2e8f0', drawBorder: false } } } };
 
-            // 1. Growth Chart
             const ctxGrowth = document.getElementById('growthChart').getContext('2d');
             charts.growth = new Chart(ctxGrowth, {
                 type: 'bar',
-                data: {
-                    labels: industries.map(i => i.name.split(' ')[0]), // Shorten labels
-                    datasets: [{
-                        label: 'Growth (%)',
-                        data: industries.map(i => i.growth_rate),
-                        backgroundColor: industries.map(i => i.growth_rate >= 0 ? '#10b981' : '#f43f5e'),
-                        borderRadius: 4
-                    }]
-                },
+                data: { labels: industries.map(i => i.name.split(' ')[0]), datasets: [{ label: 'Growth (%)', data: industries.map(i => i.growth_rate), backgroundColor: industries.map(i => i.growth_rate >= 0 ? '#10b981' : '#f43f5e'), borderRadius: 4 }] },
                 options: commonOptions
             });
 
-            // 2. Unemployment Line Chart
             const ctxUnemp = document.getElementById('unemploymentChart').getContext('2d');
             charts.unemp = new Chart(ctxUnemp, {
                 type: 'line',
-                data: {
-                    labels: ['Dec', 'Mar', 'Jun', 'Sep', 'Forecast'],
-                    datasets: [{
-                        label: 'Unemployment Rate',
-                        // Adjust history slightly based on current region multiplier for visual consistency
-                        data: [
-                            (5.1 * (parseFloat(currentUnemp)/5.3)).toFixed(1), 
-                            (5.1 * (parseFloat(currentUnemp)/5.3)).toFixed(1),
-                            (5.2 * (parseFloat(currentUnemp)/5.3)).toFixed(1),
-                            (5.3 * (parseFloat(currentUnemp)/5.3)).toFixed(1),
-                            currentUnemp
-                        ],
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
+                data: { labels: ['Dec', 'Mar', 'Jun', 'Sep', 'Forecast'], datasets: [{ label: 'Unemployment Rate', data: [(5.1 * (parseFloat(currentUnemp)/5.3)).toFixed(1), (5.1 * (parseFloat(currentUnemp)/5.3)).toFixed(1), (5.2 * (parseFloat(currentUnemp)/5.3)).toFixed(1), (5.3 * (parseFloat(currentUnemp)/5.3)).toFixed(1), currentUnemp], borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.4 }] },
                 options: commonOptions
             });
 
-            // 3. Regional Donut Chart (Static distribution visualization)
             const ctxRegion = document.getElementById('regionChart').getContext('2d');
             charts.region = new Chart(ctxRegion, {
                 type: 'doughnut',
-                data: {
-                    labels: ['Auckland', 'Wellington', 'Canterbury', 'Waikato', 'Other'],
-                    datasets: [{
-                        data: [35, 15, 14, 9, 27], // Static share %
-                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#cbd5e1'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } },
-                    cutout: '70%'
-                }
+                data: { labels: ['Auckland', 'Wellington', 'Canterbury', 'Waikato', 'Other'], datasets: [{ data: [35, 15, 14, 9, 27], backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#cbd5e1'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } }, cutout: '70%' }
             });
         }
 
-        // Search Logic
+        // --- SEARCH & AI LOGIC ---
         function handleGlobalSearch() {
             const input = document.getElementById('globalSearch').value.toLowerCase();
             const panel = document.getElementById('searchResultsPanel');
             const tbody = document.getElementById('anzscoResultsBody');
             const noRes = document.getElementById('noResultsMsg');
             
-            if (input.length < 2) {
-                panel.classList.add('hidden');
-                return;
-            }
-
+            if (input.length < 2) { panel.classList.add('hidden'); return; }
             panel.classList.remove('hidden');
             tbody.innerHTML = '';
             
-            const results = appData.anzsco_list.filter(item => 
-                item.title.toLowerCase().includes(input) || 
-                item.code.includes(input) ||
-                (item.inz_status && item.inz_status.toLowerCase().includes(input))
-            );
+            const results = appData.anzsco_list.filter(item => item.title.toLowerCase().includes(input) || item.code.includes(input) || (item.inz_status && item.inz_status.toLowerCase().includes(input)));
 
             if (results.length === 0) {
                 noRes.classList.remove('hidden');
             } else {
                 noRes.classList.add('hidden');
                 results.forEach(item => {
-                    let inzBadge = '';
-                    if (item.inz_status.includes('Green List Tier 1')) {
-                        inzBadge = `<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs border border-green-200 font-bold whitespace-nowrap"><i class="fa-solid fa-check-double"></i> Green List Tier 1</span>`;
-                    } else if (item.inz_status.includes('Green List Tier 2')) {
-                        inzBadge = `<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded text-xs border border-emerald-200 whitespace-nowrap"><i class="fa-solid fa-check"></i> Green List Tier 2</span>`;
-                    } else if (item.inz_status.includes('Sector Agreement')) {
-                        inzBadge = `<span class="bg-orange-50 text-orange-700 px-2 py-1 rounded text-xs border border-orange-200 whitespace-nowrap"><i class="fa-solid fa-handshake"></i> ${item.inz_status}</span>`;
-                    } else {
-                        inzBadge = `<span class="text-slate-400 text-xs whitespace-nowrap">Standard Pathway</span>`;
-                    }
-
+                    let badgeClass = item.inz_status.includes('Green List') ? 'bg-green-100 text-green-700 border-green-200' : (item.inz_status.includes('Sector') ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-slate-100 text-slate-500 border-slate-200');
+                    
                     const row = `
                         <tr class="hover:bg-blue-50 cursor-default transition-colors group">
                             <td class="px-6 py-4 font-mono text-blue-600 font-semibold group-hover:text-blue-800 align-top">${item.code}</td>
-                            <td class="px-6 py-4 font-medium text-slate-800 whitespace-normal break-words align-top">${item.title}</td>
-                            <td class="px-6 py-4 align-top">
-                                <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs border border-slate-200">Level ${item.skill_level}</span>
+                            <td class="px-6 py-4 font-medium text-slate-800 whitespace-normal break-words align-top">
+                                ${item.title}
+                                <div class="text-xs text-slate-400 mt-1">${item.salary || 'Salary Data N/A'} • ${item.outlook || 'Outlook N/A'}</div>
                             </td>
-                            <td class="px-6 py-4 align-top">${inzBadge}</td>
+                            <td class="px-6 py-4 align-top">
+                                <span class="${badgeClass} px-2 py-1 rounded text-xs border font-bold whitespace-nowrap">${item.inz_status}</span>
+                            </td>
+                            <td class="px-6 py-4 align-top text-right">
+                                <button onclick="openAiModal('${item.code}')" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs px-3 py-1.5 rounded-lg shadow hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2 ml-auto">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Ask AI
+                                </button>
+                            </td>
                         </tr>
                     `;
                     tbody.insertAdjacentHTML('beforeend', row);
@@ -611,6 +578,61 @@
                 const text = row.innerText.toLowerCase();
                 row.style.display = text.includes(filter) ? '' : 'none';
             }
+        }
+
+        // --- AI MODAL LOGIC (Simulated) ---
+        function openAiModal(code) {
+            const job = appData.anzsco_list.find(j => j.code === code);
+            if(!job) return;
+
+            document.getElementById('aiModal').classList.remove('hidden');
+            document.getElementById('aiLoading').classList.remove('hidden');
+            document.getElementById('aiContent').classList.add('hidden');
+            document.getElementById('aiContent').innerHTML = '';
+
+            // Simulate Network Delay for "Thinking"
+            setTimeout(() => {
+                const analysis = generateAiAnalysis(job);
+                document.getElementById('aiLoading').classList.add('hidden');
+                document.getElementById('aiContent').classList.remove('hidden');
+                typeWriterEffect(analysis, 'aiContent');
+            }, 1500);
+        }
+
+        function closeAiModal() {
+            document.getElementById('aiModal').classList.add('hidden');
+        }
+
+        function generateAiAnalysis(job) {
+            // Logic to create a "Smart" report based on data tags
+            const isGreenList = job.inz_status.includes('Green List');
+            const isHighGrowth = job.outlook && (job.outlook.includes('High') || job.outlook.includes('Critical'));
+            
+            return `
+### **Gemini Analysis: ${job.title}**
+
+**Performance Score:** ${isHighGrowth ? '⭐⭐⭐⭐⭐ (Excellent)' : '⭐⭐⭐ (Stable)'}
+
+**1. Market Outlook**
+${job.outlook || 'Standard'} conditions apply. ${isHighGrowth ? 'This role is currently facing a significant talent shortage in New Zealand, increasing leverage for qualified applicants.' : 'The market for this role is balanced, with steady employment opportunities.'}
+
+**2. Salary Potential**
+The typical band is **${job.salary}**. ${job.skill_level === 1 ? 'Senior roles in this sector frequently exceed the cap significantly.' : 'Rates are competitive, especially with overtime.'}
+
+**3. Visa Pathway Analysis**
+${isGreenList ? `✅ **Highly Favourable:** This role is on the **${job.inz_status}**. This allows for a streamlined path to residency, bypassing many standard advertising requirements.` : `ℹ️ **Standard:** This role follows standard visa processing. Employers may need to prove no New Zealanders are available (Job Check).`}
+
+**Recommendation:**
+${isHighGrowth && isGreenList ? 'Aggressively pursue this path. The combination of high demand and Tier 1 visa status makes this one of the most secure career moves in NZ right now.' : 'A solid career choice. Focus on highlighting specific NZ-registered qualifications to improve employability.'}
+            `;
+        }
+
+        function typeWriterEffect(markdown, elementId) {
+            const html = marked.parse(markdown);
+            const container = document.getElementById(elementId);
+            container.innerHTML = html;
+            // Simple fade in for now to keep it snappy
+            container.classList.add('animate-fade-in');
         }
 
         loadData();
