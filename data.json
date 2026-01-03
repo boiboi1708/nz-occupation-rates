@@ -1,12 +1,12 @@
 {
     "meta": {
-        "last_updated": "2026-01-02",
+        "last_updated": "2026-01-03",
         "quarter": "Dec 2025 (Forecast)"
     },
     "stats": {
-        "unemployment_rate": 5.9,
+        "unemployment_rate": 6.0,
         "employment_rate": 66.6,
-        "unemployment_trend": -0.1,
+        "unemployment_trend": 0.1,
         "employment_trend": -0.2
     },
     "industries": [
